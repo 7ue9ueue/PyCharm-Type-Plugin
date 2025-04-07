@@ -1,0 +1,20 @@
+<idea-plugin>
+    <id>com.example.PythonPlugin</id>
+    <name>Python Variable Type Plugin</name>
+    <version>1.0-SNAPSHOT</version>
+    <vendor email="23.tony.wu.swis@gmail.com" url="https://7ue9ueue.github.io">Shangtong Wu</vendor>
+
+    <description>
+        A PyCharm plugin that displays the type of a variable under the caret in the status bar.
+    </description>
+
+    <depends>com.intellij.modules.python</depends>
+    <idea-version since-build="213" until-build="243.*" />
+
+    <extensions defaultExtensionNs="com.intellij">
+        <statusBarWidget factoryClass="com.example.VariableTypeStatusWidgetFactory"/>
+    </extensions>
+
+    <actions>
+    </actions>
+</idea-plugin>
