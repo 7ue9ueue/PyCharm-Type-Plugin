@@ -9,12 +9,9 @@
     </description>
 
     <depends>com.intellij.modules.python</depends>
-    <idea-version since-build="213" until-build="243.*" />
 
     <extensions defaultExtensionNs="com.intellij">
-        <statusBarWidget factoryClass="com.example.VariableTypeStatusWidgetFactory"/>
+        <statusBarWidgetFactory implementation="com.example.VariableTypeStatusWidgetFactory"/>
     </extensions>
 
-    <actions>
-    </actions>
 </idea-plugin>

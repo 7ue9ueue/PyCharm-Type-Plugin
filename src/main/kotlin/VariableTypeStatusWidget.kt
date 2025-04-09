@@ -1,24 +1,25 @@
 package com.example
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.StatusBarWidget.Multiframe
 import com.intellij.openapi.wm.StatusBarWidget.TextPresentation
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.jetbrains.python.psi.PyAssignmentStatement
 import com.jetbrains.python.psi.PyExpression
 import com.jetbrains.python.psi.types.TypeEvalContext
-import java.util.function.Consumer
-import java.awt.event.MouseEvent
-import javax.swing.JComponent
+import com.intellij.util.Consumer
 import java.awt.Component
+import java.awt.event.MouseEvent
 
-class VariableTypeStatusWidget : StatusBarWidget, TextPresentation, Multiframe {
+private val logger = Logger.getInstance(VariableTypeStatusWidget::class.java)
+
+class VariableTypeStatusWidget : StatusBarWidget, TextPresentation {
     private var statusBar: StatusBar? = null
     private var currentType: String = "N/A"
     private var caretListener: CaretListener? = null
@@ -27,6 +28,8 @@ class VariableTypeStatusWidget : StatusBarWidget, TextPresentation, Multiframe {
     override fun ID(): String = "VariableTypeStatusWidget"
 
     override fun install(statusBar: StatusBar) {
+        // Log plugin installation using the Logger API.
+        logger.info("VariableTypeStatusWidget installed.")
         this.statusBar = statusBar
         project = statusBar.project
 
@@ -34,13 +37,14 @@ class VariableTypeStatusWidget : StatusBarWidget, TextPresentation, Multiframe {
         val editorFactory = EditorFactory.getInstance()
         caretListener = object : CaretListener {
             override fun caretPositionChanged(event: CaretEvent) {
+                logger.info("Caret position changed (offset: ${event.caret?.offset}) in editor: ${event.editor}")
                 val editor = event.editor
                 val proj = editor.project ?: return
                 val psiFile = PsiDocumentManager.getInstance(proj).getPsiFile(editor.document) ?: return
                 val offset = event.caret?.offset ?: return
                 val element = psiFile.findElementAt(offset) ?: return
 
-                // Try to locate an assignment statement in which this element is part of the target.
+                // Locate an assignment statement in which this element is part of the target.
                 val assignment = PsiTreeUtil.getParentOfType(element, PyAssignmentStatement::class.java)
                 if (assignment != null) {
                     // Check if the caret is on one of the assignment targets.
@@ -48,10 +52,11 @@ class VariableTypeStatusWidget : StatusBarWidget, TextPresentation, Multiframe {
                     if (targetMatches) {
                         val value: PyExpression? = assignment.assignedValue
                         if (value != null) {
-                            // Use the PyCharm type evaluation API to infer the type.
+                            // Infer the type using the PyCharm type evaluation API.
                             val context = TypeEvalContext.userInitiated(proj, psiFile)
                             val inferredType = context.getType(value)
                             currentType = inferredType?.getName() ?: "Unknown"
+                            logger.info("Inferred type: $currentType")
                         } else {
                             currentType = "N/A"
                         }
@@ -68,8 +73,11 @@ class VariableTypeStatusWidget : StatusBarWidget, TextPresentation, Multiframe {
     }
 
     override fun dispose() {
-        // Clean up the listener if needed.
-        caretListener = null
+        val editorFactory = EditorFactory.getInstance()
+        if (caretListener != null) {
+            editorFactory.eventMulticaster.removeCaretListener(caretListener!!)
+            caretListener = null
+        }
     }
 
     override fun getPresentation(): StatusBarWidget.WidgetPresentation = this
@@ -80,7 +88,5 @@ class VariableTypeStatusWidget : StatusBarWidget, TextPresentation, Multiframe {
 
     override fun getAlignment(): Float = Component.CENTER_ALIGNMENT
 
-    override fun getClickConsumer(): com.intellij.util.Consumer<MouseEvent>? = null
-
-    override fun copy(): StatusBarWidget = VariableTypeStatusWidget()
+    override fun getClickConsumer(): Consumer<MouseEvent>? = null
 }
